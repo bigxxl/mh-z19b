@@ -2,9 +2,12 @@
 
 # -*- coding: utf8 -*-
 
+# version 0.0.1
+
 import serial, sched, time, socket, daemon, logging
 import argparse
 from daemon import pidfile
+from logging.handlers import TimedRotatingFileHandler
 import signal
 import sys
 import os.path
@@ -16,10 +19,12 @@ CO2_Level = 400
 CO2_Prev = CO2_Level
 Temp = 0
 
-DEV='/dev/ttyS1'
-PIDFILE='/var/run/co2.pid'
+DEV = '/dev/ttyS1'
+PIDFILE = '/var/run/co2.pid'
+LOG_PATH = "/var/log/co2.log"
+DATA_PATH = "/var/spool/co2"
 #Main cycle delay
-DELAY=5
+DELAY=10
 
 
 def zero_calib():
@@ -95,7 +100,7 @@ def time_func():
     print( CO2_Level )
     logger.info("Still work, co2 level: "+str(CO2_Level)+", internal temp: "+str(Temp))
     try:
-      log_file = open("/var/spool/co2", "w+")
+      log_file = open(DATA_PATH, "w+")
       log_file.write(str(CO2_Level)) 
       log_file.seek(0)
       log_file.close()
@@ -136,7 +141,8 @@ if set_range() == 1 : print ("Range = 5000 ppm")
 logger = logging.getLogger("CO2 logger")
 logger.setLevel(logging.INFO)
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-handler = logging.FileHandler("/var/log/co2.log")
+handler = logging.FileHandler(LOG_PATH)
+handler = TimedRotatingFileHandler(LOG_PATH, when="W0", interval=1, backupCount=30)
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
